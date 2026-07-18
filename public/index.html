@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ормузька протока — трафік суден</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Spectral:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --chart-paper: #e8e0c6;
+      --ink: #1c2b3a;
+      --depth: #2c5f74;
+      --brass: #a97531;
+      --brass-light: #c99a52;
+      --line: rgba(28, 43, 58, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--chart-paper);
+      background-image:
+        repeating-linear-gradient(0deg, var(--line) 0px, transparent 1px, transparent 28px, var(--line) 29px),
+        repeating-linear-gradient(90deg, var(--line) 0px, transparent 1px, transparent 28px, var(--line) 29px);
+      color: var(--ink);
+      font-family: 'Spectral', serif;
+      padding: 32px 20px 60px;
+    }
+
+    header {
+      max-width: 920px;
+      margin: 0 auto 36px;
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 18px;
+    }
+
+    .eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--depth);
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin: 6px 0 4px;
+    }
+
+    .subtitle {
+      font-size: 15px;
+      color: #46586a;
+      max-width: 560px;
+    }
+
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    /* --- Меридіан: сигнатурний елемент --- */
+    .strait {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 40px 0 48px;
+      padding: 28px 24px;
+    }
+
+    .strait::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: repeating-linear-gradient(180deg, var(--brass) 0 6px, transparent 6px 12px);
+    }
+
+    .strait::after {
+      content: '35.16° E';
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--chart-paper);
+      padding: 0 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--brass);
+      letter-spacing: 0.05em;
+    }
+
+    .side {
+      flex: 1;
+      text-align: center;
+      z-index: 1;
+    }
+
+    .side .label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--depth);
+    }
+
+    .side .count {
+      font-size: 56px;
+      font-weight: 700;
+      line-height: 1;
+      margin-top: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .side .arrow {
+      font-size: 22px;
+      color: var(--brass);
+    }
+
+    /* --- Таблиця категорій --- */
+    .categories {
+      border-top: 1px solid var(--ink);
+    }
+
+    .cat-row {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr;
+      padding: 12px 4px;
+      border-bottom: 1px solid var(--line);
+      align-items: center;
+    }
+
+    .cat-row.head {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--depth);
+    }
+
+    .cat-name {
+      font-weight: 600;
+    }
+
+    .cat-value {
+      font-family: 'IBM Plex Mono', monospace;
+      text-align: right;
+      font-size: 15px;
+    }
+
+    footer {
+      max-width: 920px;
+      margin: 40px auto 0;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: #6b7d8f;
+      text-align: right;
+    }
+
+    .empty {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      color: #6b7d8f;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="eyebrow">Strait Watch · 26°34′N 56°15′E</div>
+    <h1>Ормузька протока</h1>
+    <p class="subtitle">Кількість суден, що перетнули умовний меридіан протоки, за даними AIS у реальному часі.</p>
+  </header>
+
+  <main>
+    <div class="strait">
+      <div class="side">
+        <div class="label">← Вхід у затоку</div>
+        <div class="count" id="west-count">—</div>
+        <div class="arrow">◄</div>
+      </div>
+      <div class="side">
+        <div class="label">Вихід із затоки →</div>
+        <div class="count" id="east-count">—</div>
+        <div class="arrow">►</div>
+      </div>
+    </div>
+
+    <div class="categories" id="categories">
+      <div class="cat-row head">
+        <div>Тип судна</div>
+        <div class="cat-value">Вхід (W)</div>
+        <div class="cat-value">Вихід (E)</div>
+      </div>
+      <div class="empty">Завантаження даних…</div>
+    </div>
+  </main>
+
+  <footer id="last-updated"></footer>
+
+  <script>
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+
+        document.getElementById('west-count').textContent = data.totals.west ?? 0;
+        document.getElementById('east-count').textContent = data.totals.east ?? 0;
+
+        const container = document.getElementById('categories');
+        const entries = Object.entries(data.byCategory || {});
+
+        if (entries.length === 0) {
+          container.innerHTML = '<div class="cat-row head"><div>Тип судна</div><div class="cat-value">Вхід (W)</div><div class="cat-value">Вихід (E)</div></div><div class="empty">Поки що жодного зафіксованого перетину.</div>';
+        } else {
+          const rows = entries
+            .sort((a, b) => (b[1].east + b[1].west) - (a[1].east + a[1].west))
+            .map(([name, v]) => `
+          <div class="cat-row">
+            <div class="cat-name">${name}</div>
+            <div class="cat-value">${v.west || 0}</div>
+            <div class="cat-value">${v.east || 0}</div>
+          </div>
+        `).join('');
+
+          container.innerHTML = `
+        <div class="cat-row head"><div>Тип судна</div><div class="cat-value">Вхід (W)</div><div class="cat-value">Вихід (E)</div></div>
+        ${rows}
+      `;
+        }
+
+        document.getElementById('last-updated').textContent =
+          'Оновлено: ' + new Date(data.lastUpdated).toLocaleString('uk-UA');
+      } catch (e) {
+        console.error('Не вдалось завантажити статистику:', e);
+      }
+    }
+
+    loadStats();
+    setInterval(loadStats, 30000);
+  </script>
+
+</body>
+
+</html>
